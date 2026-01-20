@@ -243,7 +243,9 @@ def main():
     def to_pil_image(img):
         """Convert numpy array to PIL Image if needed."""
         if isinstance(img, np.ndarray):
-            # Handle different array formats
+            if img.ndim == 5:
+                # If using a text-to-video model, squeeze the batch and time dimensions
+                img = img.squeeze(0).squeeze(0)
             if img.dtype == np.float32 or img.dtype == np.float64:
                 # Assume values are in [0, 1] range
                 img = (img * 255).clip(0, 255).astype(np.uint8)
