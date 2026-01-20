@@ -6,7 +6,9 @@ import os
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
+from PIL import Image
 
 from vllm_omni.diffusion.data import DiffusionParallelConfig, logger
 from vllm_omni.entrypoints.omni import Omni
@@ -237,13 +239,26 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
     suffix = output_path.suffix or ".png"
     stem = output_path.stem or "qwen_image_output"
+
+    def to_pil_image(img):
+        """Convert numpy array to PIL Image if needed."""
+        if isinstance(img, np.ndarray):
+            # Handle different array formats
+            if img.dtype == np.float32 or img.dtype == np.float64:
+                # Assume values are in [0, 1] range
+                img = (img * 255).clip(0, 255).astype(np.uint8)
+            return Image.fromarray(img)
+        return img
+
     if len(images) <= 1:
-        images[0].save(output_path)
+        pil_img = to_pil_image(images[0])
+        pil_img.save(output_path)
         print(f"Saved generated image to {output_path}")
     else:
         for idx, img in enumerate(images):
+            pil_img = to_pil_image(img)
             save_path = output_path.parent / f"{stem}_{idx}{suffix}"
-            img.save(save_path)
+            pil_img.save(save_path)
             print(f"Saved generated image to {save_path}")
 
 
